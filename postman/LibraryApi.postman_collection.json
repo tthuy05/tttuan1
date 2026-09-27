@@ -1,0 +1,339 @@
+{
+  "info": {
+    "_postman_id": "91f2db30-c983-4fb7-8463-e715020a5cc1",
+    "name": "Library API",
+    "description": "Collection kiểm tra health check, phân trang/lọc/sắp xếp và CRUD sách. Chạy project trước bằng `dotnet run`, sau đó có thể chạy toàn bộ collection theo thứ tự.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/health-check",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "health-check"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response reports a healthy service\", function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body).to.have.property(\"status\", \"ok\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Books",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/books?page=1&pageSize=10&category=IT&sort=title",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "books"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "pageSize",
+              "value": "10"
+            },
+            {
+              "key": "category",
+              "value": "IT"
+            },
+            {
+              "key": "sort",
+              "value": "title"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has pagination metadata\", function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.items).to.be.an(\"array\");",
+              "    pm.expect(body.page).to.equal(1);",
+              "    pm.expect(body.pageSize).to.equal(10);",
+              "    pm.expect(body.totalItems).to.be.a(\"number\");",
+              "    pm.expect(body.totalPages).to.be.a(\"number\");",
+              "});",
+              "",
+              "pm.test(\"Books are filtered by category and sorted by title\", function () {",
+              "    const books = pm.response.json().items;",
+              "    pm.expect(books.every(book => book.category.toLowerCase() === \"it\")).to.be.true;",
+              "    const titles = books.map(book => book.title);",
+              "    const sortedTitles = [...titles].sort((left, right) => left.localeCompare(right));",
+              "    pm.expect(titles).to.eql(sortedTitles);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Book",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"The Phoenix Project\",\n  \"author\": \"Gene Kim, Kevin Behr, George Spafford\",\n  \"category\": \"IT\",\n  \"publishedYear\": 2013\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/books",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "books"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Created book is returned\", function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.id).to.be.a(\"number\");",
+              "    pm.expect(body.title).to.equal(\"The Phoenix Project\");",
+              "    pm.collectionVariables.set(\"bookId\", String(body.id));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Book By Id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/books/{{bookId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "books",
+            "{{bookId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Requested book is returned\", function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.id).to.equal(Number(pm.collectionVariables.get(\"bookId\")));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Book",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"The Phoenix Project - Updated\",\n  \"publishedYear\": 2014\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/books/{{bookId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "books",
+            "{{bookId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Only supplied fields are updated\", function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.title).to.equal(\"The Phoenix Project - Updated\");",
+              "    pm.expect(body.publishedYear).to.equal(2014);",
+              "    pm.expect(body.category).to.equal(\"IT\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Book",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/books/{{bookId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "books",
+            "{{bookId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});",
+              "",
+              "pm.test(\"Response body is empty\", function () {",
+              "    pm.expect(pm.response.text()).to.equal(\"\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Book Not Found",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/books/{{missingBookId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "books",
+            "{{missingBookId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 404\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5200",
+      "type": "string"
+    },
+    {
+      "key": "bookId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "missingBookId",
+      "value": "999999",
+      "type": "string"
+    }
+  ]
+}
